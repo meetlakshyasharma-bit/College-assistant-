@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Assistant</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: #0f1715; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; }
+        .app-container { width: 100%; max-width: 420px; height: 90vh; max-height: 750px; background-color: #14231e; border: 1px solid #2d4a3e; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d4a3e; }
+        .logo-area { display: flex; align-items: center; gap: 10px; }
+        .logo-badge { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #eab308; color: #eab308; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; }
+        .title-text h1 { color: #eab308; font-size: 1.2rem; }
+        .sub-tag { background-color: #1c352c; color: #4ade80; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; }
+        .chat-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 14px; border-radius: 12px; max-width: 80%; font-size: 0.9rem; line-height: 1.4; }
+        .user-msg { background-color: #eab308; color: #000; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .bot-msg { background-color: #1c352c; color: #fff; align-self: flex-start; border: 1px solid #2d4a3e; border-bottom-left-radius: 2px; }
+        .pills-bar { display: flex; gap: 8px; padding: 10px; overflow-x: auto; background-color: #0b1411; }
+        .pill { background-color: #1c352c; border: 1px solid #2d4a3e; color: #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; white-space: nowrap; cursor: pointer; }
+        .pill:active { background-color: #2d4a3e; }
+        .input-area { padding: 10px; background-color: #0b1411; display: flex; gap: 8px; }
+        .input-box { flex: 1; background-color: #1c352c; border: 1px solid #2d4a3e; border-radius: 8px; padding: 10px; color: #fff; outline: none; }
+        .send-btn { background-color: #eab308; color: #000; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <div class="logo-area">
+            <div class="logo-badge">CA</div>
+            <div class="title-text">
+                <h1>College Assistant</h1>
+                <span class="sub-tag">AI Campus Guide</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+        <div class="msg bot-msg">Namaste! Main aapka College Assistant hoon. Aaj padhai ya college se juda kya doubt hai?</div>
+    </div>
+
+    <div class="pills-bar">
+        <div class="pill" onclick="sendPill('Mujhe padhai me concentration ki dikkat hai.')">💡 Study Tips</div>
+        <div class="pill" onclick="sendPill('Resume ke liye professional format batao.')">📄 Resume Format</div>
+        <div class="pill" onclick="sendPill('Exam Revision ke liye best strategy kya hai?')">📋 Exam Strategy</div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="userInput" class="input-box" placeholder="Kuch bhi pucho..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button class="send-btn" onclick="sendMessage()">Bhejo</button>
+    </div>
+</div>
+
+<script>
+    // NICHE APNI GEMINI API KEY PUT KAREIN
+    const API_KEY = "YOUR_GEMINI_API_KEY_HERE"; 
+
+    async function sendMessage() {
+        const input = document.getElementById('userInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        appendMessage(text, 'user-msg');
+        input.value = '';
+
+        const loadingId = appendMessage('Assistant soch raha hai...', 'bot-msg');
+
+        if (API_KEY === "YOUR_GEMINI_API_KEY_HERE" || !API_KEY) {
+            document.getElementById(loadingId).innerText = "API Key missing hai! Code me apni API Key replace karein.";
+            return;
+        }
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: "You are a helpful college assistant. Reply in clean Hinglish strictly within 2-3 short sentences. User question: " + text }] }]
+                })
+            });
+
+            const data = await response.json();
+            const reply = data.candidates[0].content.parts[0].text;
+            document.getElementById(loadingId).innerText = reply;
+        } catch (err) {
+            document.getElementById(loadingId).innerText = "Network Issue ya Galat API Key! Kripya check karein.";
+        }
+    }
+
+    function sendPill(text) {
+        document.getElementById('userInput').value = text;
+        sendMessage();
+    }
+
+    function appendMessage(text, className) {
+        const chatArea = document.getElementById('chatArea');
+        const msgDiv = document.createElement('div');
+        const id = 'msg-' + Date.now();
+        msgDiv.id = id;
+        msgDiv.className = `msg ${className}`;
+        msgDiv.innerText = text;
+        chatArea.appendChild(msgDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+        return id;
+    }
+</script>
+
+</body>
+</html>
